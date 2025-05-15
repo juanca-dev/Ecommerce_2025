@@ -1,16 +1,77 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudThemeProvider IsDarkMode= "_darkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Primary" 
+                       Edge="Edge.Start"
+                       OnClick="@((e) => ToggleDrawer())" /> 
+        <MudLink Href="/"
+                 Typo="Typo.h5"
+                 Class="ml-3"
+                 Color="Color.Inherit">
+        </MudLink>
+        <MudSpacer />
+        <MudMenu Icon="@Icons.Material.Filled.Settings"
+                 Color="Color.Inherit"
+                 ActivationEvent="@MouseEvent.MouseOver"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight">
+        </MudMenu>
+        <MudIconButton Icon="@_icon"
+                       Color="Color.Inherit"  
+                       Edge="Edge.Start"
+                       OnClick="@((e) => ToggleDarkMode())" />
+         </MudAppBar>           
+         <MudDrawer @bind-Open="_drawerOpen"
+                     ClipMode = "DrawerClipMode.Always"
+                     Elevation="2">
+                <NavMenu />
+         </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Style="margin-top: 3rem">
+        @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+@code{
+    /*   
+    private bool _drawerOpen = true;
+    private bool _darkMode = false;
+    private string _icon = Icons.Material.Filled.DarkMode;
+
+    private void DrawerToggle//  OnClick="@((e) => ToggleDrawer())" />
+        {
+            _darkMode = !_drawerOpen;
+            _icon = _darkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode;
+    }
+        */
+}
+@code {
+// Controla si el drawer (panel lateral) está abierto o cerrado
+    private bool _drawerOpen = true;
+
+    // Indica si el modo oscuro está activado o no
+    private bool _darkMode = false;
+
+    // Ícono del botón de alternancia de modo (luz u oscuro)
+    private string _icon = Icons.Material.Filled.DarkMode;
+
+    // Método para alternar el estado del drawer (abrir/cerrar)
+    private void ToggleDrawer() // tener en cuenta la linea 12 ( OnClick="@((e) => ToggleDrawer())" /> )
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    // Método para alternar entre modo claro y oscuro, y actualizar el ícono correspondiente
+    private void ToggleDarkMode()
+    {
+        _darkMode = !_darkMode;
+        _icon = _darkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode;
+    }
+}

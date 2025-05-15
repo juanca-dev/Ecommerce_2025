@@ -1,0 +1,154 @@
+﻿@page "/categorias"
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
+    <MudText Typo="Typo.h4" Class="text-center mb-6"> Lista de Categorias</MudText>
+    <MudButton OnClick="CrearCategoria" Color="Color.Primary" EndIcon="@Icons.Material.Filled.Add">Crear categoria</MudButton>
+    @if (loading)
+    {
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Class="mt-6" />
+    }
+    else
+    {
+        <MudTable Items="@categorias" Filter="new Func<Categoria, bool>(FilterFunc1)" Hover="true" Bordered="true" Striped="true" Dense="true">
+            <ToolBarContent>
+                <MudTextField @bind-Value="filtro" Placeholder="Buscar por nombre"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-1" />
+                |
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Nombre</MudTd>
+                <MudTh>
+                    <MudButton OnClick="() => EditarCategoria(context.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Edit">Editar></MudButton>
+                    <MudButton OnClick="() => EliminarCategoria(context.Id)" Color="Color.Error" EndIcon="@Icons.Material.Filled.Delete">Eliminar</MudButton>
+                </MudTh>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    }
+</MudContainer>
+
+
+@code {
+    private List<Categoria> categorias = new List<Categoria>();
+    private bool loading = true;
+    private string filtro = string.Empty;
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        var url = "api/categorias";
+        categorias = await Repository.GetAsync<List<Categoria>>(url);
+        loading = false;
+    }
+
+    private bool FilterFunc1(Categoria element) => FilterFunc(element, filtro);
+
+    private bool FilterFunc(Categoria element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Nombre.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task CrearCategoria()
+
+    {
+        try
+        {
+            var parameters = new DialogParameters();
+            var options = new DialogOptions
+                {
+                    CloseButton = true,
+                    MaxWidth = MaxWidth.ExtraSmall,
+                    FullWidth = true,
+                };
+
+            var dialog = await DialogService.ShowAsync<CrearCategoria>("", parameters, options);
+            var result = await dialog.Result;
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Categoria creada exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/categorias");
+            }
+        }
+
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+    }
+    private async Task EditarCategoria(int id)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["CategoriaId"] = id };
+            var options = new DialogOptions
+                {
+                    CloseButton = true,
+                    MaxWidth = MaxWidth.Small,
+                    FullWidth = true,
+                };
+
+            var dialog = await DialogService.ShowAsync<EditarCategoria>("", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Categoria actualizada exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/categorias");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task EliminarCategoria(int id)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["CategoriaId"] = id };
+            var options = new DialogOptions
+                {
+                    CloseButton = true,
+                    MaxWidth = MaxWidth.Small,
+                    FullWidth = true,
+                };
+
+            var dialog = await DialogService.ShowAsync<EliminarCategoria>("", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Categoria eliminada exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/categorias");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+
+
+
+    }
+}

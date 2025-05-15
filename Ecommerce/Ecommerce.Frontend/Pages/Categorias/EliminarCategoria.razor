@@ -1,0 +1,67 @@
+﻿﻿﻿﻿﻿﻿﻿<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" GutterBottom="true">¿Estás seguro?</MudText>
+        <MudText Typo="Typo.body2">
+            Estás a punto de eliminar este registro. Esta acción no se puede deshacer. ¿Deseas continuar?
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Primary" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="Eliminar" Color="Color.Error" Variant="Variant.Filled">Eliminar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public int CategoriaId { get; set; }
+
+    private Categoria categoria = new();
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var url = "api/categorias";
+        categoria = await Repository.GetByIdAsync<Categoria>(url, CategoriaId);
+
+        if (categoria == null)
+        {
+            Snackbar.Add("La categoria no existe.", Severity.Error);
+            NavigationManager.NavigateTo("/categorias");
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        try
+        {
+
+            var url = $"api/categorias/{CategoriaId}";
+            var result = await Repository.DeleteAsync(url);
+
+            if (result != null)
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                NavigationManager.NavigateTo("/categorias");
+            }
+            else
+            {
+                Snackbar.Add("Error al eliminar la categoria.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/categorias");
+    }
+
+}

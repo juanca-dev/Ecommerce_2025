@@ -1,0 +1,60 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle2" Class="text-center mb-6"> Crear una nueva categoria</MudText>
+
+        <MudTextField @bind-Value="nuevaCategoria.Nombre" Label="Nombre" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" Required="true"
+                      HelperText="Por Favor, ingresa el nombre de  la categoria." />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-6 w-100"
+         OnClick="Guardar">Guardar</MudButton>
+    </DialogContent>
+</MudDialog>
+
+
+@code {
+    private Categoria nuevaCategoria = new Categoria();
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+
+    [CascadingParameter] 
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(nuevaCategoria.Nombre))
+            {
+                Snackbar.Add("Por favor, completa  todos los campos obligatorios.", Severity.Error);
+                return;
+            }
+
+            var url = "api/categorias";
+            var response = await Repository.PostAsync(url, nuevaCategoria);
+
+            if (response.IsSuccessStatusCode)
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                NavigationManager.NavigateTo("/categorias");
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                Snackbar.Add(error?.Message ?? "Error desconocido.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; } = "";
+        public bool IsSuccess { get; set; }
+    }
+}
