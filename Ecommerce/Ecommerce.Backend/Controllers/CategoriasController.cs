@@ -1,9 +1,6 @@
-﻿using Azure.Messaging;
-using Ecommerce.Backend.Services;
+﻿using Ecommerce.Backend.Services;
 using Ecommerce.Shared.Entities;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Backend.Controllers
 {
@@ -16,7 +13,6 @@ namespace Ecommerce.Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            // ME CONECTO AL SERVICES
             var categorias = await _service.GetAllAsync();
             return Ok(categorias);
         }
@@ -30,36 +26,41 @@ namespace Ecommerce.Backend.Controllers
                 return NotFound();
             }
             return Ok(categoria);
-
         }
 
         [HttpPost]
-
         public async Task<ActionResult> CrearCategoria([FromBody] Categoria nuevaCategoria)
         {
             if (nuevaCategoria == null)
             {
                 return BadRequest();
             }
-            var result = await _service.AddAsync(nuevaCategoria);
-            return CreatedAtAction(nameof(GetCategoria), new { id = nuevaCategoria.Id }, nuevaCategoria);
+            var response = await _service.AddAsync(nuevaCategoria);
+            if (!response.Success)
+            {
+                return BadRequest(new { message = response.Message });
+            }
+            return CreatedAtAction(nameof(GetCategoria), new { id = response.Result!.Id }, response.Result);
         }
 
         [HttpPut("{id}")]
-
         public async Task<ActionResult> ActualizarCategoria(int id, [FromBody] Categoria categoriaActualizada)
         {
             if (id != categoriaActualizada.Id)
             {
                 return BadRequest("El ID de la categoría no coincide.");
             }
+            var response = await _service.UpdateAsync(categoriaActualizada);
 
-            await _service.UpdateAsync(categoriaActualizada);
-            return NoContent();
+            if (!response.Success)
+            {
+                return BadRequest(new { message = response.Message });
+            }
+
+            return CreatedAtAction(nameof(GetCategoria), new { id = response.Result!.Id }, response.Result);
         }
 
         [HttpDelete("{id}")]
-
         public async Task<ActionResult> EliminarCategoria(int id)
         {
             try
@@ -72,7 +73,5 @@ namespace Ecommerce.Backend.Controllers
                 return NotFound();
             }
         }
-
-
     }
 }

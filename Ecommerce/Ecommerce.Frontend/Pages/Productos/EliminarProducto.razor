@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<MudDialog>
+﻿﻿<MudDialog>
     <DialogContent>
         <MudText Typo="Typo.h6" GutterBottom="true">¿Estás seguro?</MudText>
         <MudText Typo="Typo.body2">
@@ -11,10 +11,10 @@
     </DialogActions>
 </MudDialog>
 
-@code {
-    [Parameter] public int CategoriaId { get; set; }
 
-    private Categoria categoria = new();
+@code {
+    private Producto producto = new Producto();
+    [Parameter] public int ProductoId { get; set; }
 
     [Inject] private IRepository Repository { get; set; } = null!;
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
@@ -25,13 +25,12 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        var url = "api/categorias";
-        categoria = await Repository.GetByIdAsync<Categoria>(url, CategoriaId);
-
-        if (categoria == null)
+        var url = "api/productos";
+        producto = await Repository.GetByIdAsync<Producto>(url, ProductoId);
+        if (producto == null)
         {
-            Snackbar.Add("La categoria no existe.", Severity.Error);
-            NavigationManager.NavigateTo("/categorias");
+            Snackbar.Add("El producto no existe.", Severity.Error);
+            NavigationManager.NavigateTo("/productos");
         }
     }
 
@@ -39,18 +38,16 @@
     {
         try
         {
-
-            var url = $"api/categorias/{CategoriaId}";
-            var result = await Repository.DeleteAsync(url);
-
-            if (result != null)
+            var url = $"api/productos/{ProductoId}";
+            var response = await Repository.DeleteAsync(url);
+            if (response != null)
             {
                 MudDialog.Close(DialogResult.Ok(true));
-                NavigationManager.NavigateTo("/categorias");
+                NavigationManager.NavigateTo("/productos");
             }
             else
             {
-                Snackbar.Add("Error al eliminar la categoria.", Severity.Error);
+                Snackbar.Add("Error al eliminar el producto.", Severity.Error);
             }
         }
         catch (Exception ex)
@@ -61,7 +58,6 @@
 
     private void Cancelar()
     {
-        NavigationManager.NavigateTo("/categorias");
+        NavigationManager.NavigateTo("/productos");
     }
-
 }

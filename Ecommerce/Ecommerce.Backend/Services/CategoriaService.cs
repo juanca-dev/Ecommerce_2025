@@ -4,19 +4,15 @@ using Ecommerce.Shared.Responses;
 
 namespace Ecommerce.Backend.Services
 {
-    // Esta capa se va 
     public class CategoriaService(ICategoriaRepository repository)
     {
-        // Aqui estamos inyectando el repositorio ya podemos acceder a la capa Datos.
-        // Agregamos metodos
         private readonly ICategoriaRepository _repository = repository;
 
         public async Task<IEnumerable<Categoria>> GetAllAsync()
         {
-            // se devuelve la lista de categorias.
-            // Aun no hay regla de negocio
             return await _repository.GetAllAsync();
         }
+
         public async Task<Categoria> GetByIdAsync(int id)
         {
             return await _repository.GetByIdAsync(id);
@@ -29,28 +25,24 @@ namespace Ecommerce.Backend.Services
 
         public async Task<ActionResponse<Categoria>> AddAsync(Categoria categoria)
         {
-
-            // Aqui se valida si ya se existe la categoria con ese nombre.
-
+            // validamos si ya existe una categoria con ese nombre
             var existe = await _repository.ExisteNombreAsync(categoria.Nombre);
-            // si existe, retornamos un error
+            //si existe, retornamos un error
             if (existe)
             {
-                return new ActionResponse<Categoria> { Success = false, Message = "Ya existe una categoria con ese nombre." };
+                return new ActionResponse<Categoria> { Success = false, Message = "Ya existe una categoría con ese nombre." };
             }
-            // si no existe enviamos la categoria al reposoitory para que la guarde en la base de datos
-
+            //si no existe enviamos la categoria al repository para que la guarde en la base de datos
             var nuevaCategoria = new Categoria { Nombre = categoria.Nombre };
-
             await _repository.AddAsync(nuevaCategoria);
-            // retornamos la respuesta al controlador
-            return new ActionResponse<Categoria> { Success = true, Result = nuevaCategoria };
 
+            //retornarnamos la respuesta al controlador
+            return new ActionResponse<Categoria> { Success = true, Result = nuevaCategoria };
         }
 
         public async Task<ActionResponse<Categoria>> UpdateAsync(Categoria categoria)
         {
-            // Validamos que existe la categoría
+            //validamos que exista la categoria
             var categoriaExistente = await _repository.GetByIdAsync(categoria.Id);
             if (categoriaExistente == null)
             {
@@ -61,18 +53,19 @@ namespace Ecommerce.Backend.Services
                 };
             }
 
-            // Validamos si ya existe otra categoría con el mismo nombre
+            //validamos si ya existe una categoria con ese nombre
             var existe = await _repository.ExisteNombreAsync(categoria.Nombre);
+
             if (existe)
             {
                 return new ActionResponse<Categoria>
                 {
                     Success = false,
-                    Message = "Ya existe una categoría con ese nombre."
+                    Message = "Ya existe otra categoría con ese nombre."
                 };
             }
 
-            // Actualizamos el nombre
+            //asignamos el nuevo nombre a la categoria
             categoriaExistente.Nombre = categoria.Nombre;
             await _repository.UpdateAsync(categoriaExistente);
 
@@ -82,6 +75,5 @@ namespace Ecommerce.Backend.Services
                 Result = categoriaExistente
             };
         }
-
     }
 }

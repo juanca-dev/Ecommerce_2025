@@ -1,23 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Ecommerce.Shared.Entities
 {
-    // dejarla en public para tener acceso
     public class Categoria
     {
         public int Id { get; set; }
-        [MaxLength(100)]
-        [Required(ErrorMessage = "El campo Nombre es requerido")]
-        //lo inicializamos ya que esa propiedad acepta nulos. (con un string vacio )
+
+        [MaxLength(50, ErrorMessage = "El campo {0} debe tener máximo {1} caractéres.")]
+        [Required(ErrorMessage = "El campo {0} es obligatorio.")]
         public string Nombre { get; set; } = string.Empty;
-        // aqui los pongo ??A
-       
-
-
     }
 }

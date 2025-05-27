@@ -1,0 +1,184 @@
+﻿@page "/productos"
+@using System.Globalization
+
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
+    <MudText Typo="Typo.h4" Class="text-center mb-6">Lista de Productos</MudText>
+    <MudButton OnClick="CrearProducto" Color="Color.Primary" EndIcon="@Icons.Material.Filled.Add">Crear producto</MudButton>
+    @if (loading)
+    {
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Class="mt-6" />
+    }
+    else
+    {
+        <MudTable Items="@productos" Filter="new Func<Producto, bool>(FilterFunc1)" Hover="true" Bordered="true" Striped="true" Dense="true">
+            <ToolBarContent>
+                <MudTextField @bind-Value="filtro" Placeholder="Buscar por nombre" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+                <MudTh>Precio</MudTh>
+                <MudTh>Stock</MudTh>
+                <MudTh>Categoría</MudTh>
+                <MudTh>Foto</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Nombre</MudTd>
+                <MudTd>@context.Precio.ToString("C2", CultureInfo.CreateSpecificCulture("es-PE"))</MudTd>
+               
+                <MudTd>@context.Stock</MudTd>
+                <MudTd>@context.Categoria!.Nombre</MudTd>
+                <MudTd>
+                    @if (!string.IsNullOrEmpty(context.URLFoto))
+                    {
+                        <img src="@context.URLFoto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%;" />
+                    }
+                    else
+                    {
+                        <MudText>No hay foto disponible</MudText>
+                    }
+                </MudTd>
+                <MudTh>
+                    <MudButton OnClick="() => EditarProducto(context.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Edit"></MudButton>
+                    <MudButton OnClick="() => EliminarProducto(context.Id)" Color="Color.Error" EndIcon="@Icons.Material.Filled.Delete"></MudButton>
+                </MudTh>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    }
+    @if (productos == null || productos.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-6">
+            No hay productos registrados.
+        </MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private List<Producto> productos = new();
+    private bool loading = true;
+    public string filtro = string.Empty;
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await CargarProductos();
+        loading = false;
+    }
+
+    private async Task CargarProductos()
+    {
+        try
+        {
+            var url = "api/productos";
+            productos = await Repository.GetAsync<List<Producto>>(url);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar los productos: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private bool FilterFunc1(Producto element) => FilterFunc(element, filtro);
+
+    private bool FilterFunc(Producto element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Nombre.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task CrearProducto()
+    {
+        try
+        {
+            var parameters = new DialogParameters();
+            var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+            };
+
+            var dialog = await DialogService.ShowAsync<CrearProducto>("", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Producto creado exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/productos");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task EditarProducto(int id)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["ProductoId"] = id };
+            var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+            };
+
+            var dialog = await DialogService.ShowAsync<EditarProducto>("Editar producto", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Producto actualizado exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/productos");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task EliminarProducto(int id)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["ProductoId"] = id };
+            var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+            };
+
+            var dialog = await DialogService.ShowAsync<EliminarProducto>("Eliminar producto", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Producto eliminado exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/productos");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+    }
+}

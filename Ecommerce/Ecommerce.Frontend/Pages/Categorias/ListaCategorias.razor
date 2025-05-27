@@ -1,43 +1,65 @@
 ﻿@page "/categorias"
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
-    <MudText Typo="Typo.h4" Class="text-center mb-6"> Lista de Categorias</MudText>
-    <MudButton OnClick="CrearCategoria" Color="Color.Primary" EndIcon="@Icons.Material.Filled.Add">Crear categoria</MudButton>
+    <MudText Typo="Typo.h4" Class="text-center mb-6">Lista de Categorías</MudText>
+
+    <MudButton OnClick="CrearCategoria" Color="Color.Primary" EndIcon="@Icons.Material.Filled.Add" Class="mb-4">
+        Crear categoría
+    </MudButton>
+
     @if (loading)
     {
-        <MudProgressCircular Indeterminate="true" Size="Size.Large" Class="mt-6" />
+        <div class="flex justify-center mt-6">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Tertiary"/>
+        </div>
     }
     else
     {
-        <MudTable Items="@categorias" Filter="new Func<Categoria, bool>(FilterFunc1)" Hover="true" Bordered="true" Striped="true" Dense="true">
-            <ToolBarContent>
-                <MudTextField @bind-Value="filtro" Placeholder="Buscar por nombre"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              IconSize="Size.Medium"
-                              Class="mt-1" />
-                |
-            </ToolBarContent>
-            <HeaderContent>
-                <MudTh>Nombre</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Nombre</MudTd>
-                <MudTh>
-                    <MudButton OnClick="() => EditarCategoria(context.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Edit">Editar></MudButton>
-                    <MudButton OnClick="() => EliminarCategoria(context.Id)" Color="Color.Error" EndIcon="@Icons.Material.Filled.Delete">Eliminar</MudButton>
-                </MudTh>
-            </RowTemplate>
-            <PagerContent>
-                <MudTablePager />
-            </PagerContent>
-        </MudTable>
+        @if (categorias == null || categorias.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-6">
+                No hay categorías registradas.
+            </MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@categorias" Filter="new Func<Categoria, bool>(FilterFunc1)" Hover="true" Bordered="true" Striped="true" Dense="true">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="filtro" Placeholder="Buscar por nombre"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Class="mt-0" />
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>Nombre</MudTh>
+                    <MudTh>Acciones</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd>@context.Nombre</MudTd>
+                    <MudTd>
+                        <MudButton OnClick="() => EditarCategoria(context.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Edit" Class="me-2">
+                            Editar
+                        </MudButton>
+                        <MudButton OnClick="() => EliminarCategoria(context.Id)" Color="Color.Error" EndIcon="@Icons.Material.Filled.Delete">
+                            Eliminar
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        }
     }
 </MudContainer>
 
 
 @code {
-    private List<Categoria> categorias = new List<Categoria>();
+    private List<Categoria> categorias = new();
     private bool loading = true;
     private string filtro = string.Empty;
 
@@ -66,7 +88,6 @@
     }
 
     private async Task CrearCategoria()
-
     {
         try
         {
@@ -74,12 +95,13 @@
             var options = new DialogOptions
                 {
                     CloseButton = true,
-                    MaxWidth = MaxWidth.ExtraSmall,
+                    MaxWidth = MaxWidth.Small,
                     FullWidth = true,
                 };
 
             var dialog = await DialogService.ShowAsync<CrearCategoria>("", parameters, options);
             var result = await dialog.Result;
+
             if (!result!.Canceled)
             {
                 await OnInitializedAsync();
@@ -87,12 +109,12 @@
                 NavigationManager.NavigateTo("/categorias");
             }
         }
-
         catch (Exception ex)
         {
             Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
         }
     }
+
     private async Task EditarCategoria(int id)
     {
         try
@@ -147,8 +169,5 @@
         {
             Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
         }
-
-
-
     }
 }

@@ -1,11 +1,8 @@
-
+using CloudinaryDotNet;
 using Ecommerce.Backend.Data;
 using Ecommerce.Backend.Repositories;
 using Ecommerce.Backend.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Builder;
-
 
 namespace Ecommerce.Backend
 {
@@ -19,28 +16,38 @@ namespace Ecommerce.Backend
 
             builder.Services.AddControllers();
             builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer("name=LocalConnection"));
-            // services de capa de negocios
+            //services capa de negocios
             builder.Services.AddScoped<CategoriaService>();
-            // repositories capa  acceso a Datos
+            builder.Services.AddScoped<ProductoService>();
+            builder.Services.AddScoped<IFilesService, FilesService>();
+
+            //repositories capa de acceso a datos
             builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+            builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
-            // registrar el  servicio de Swagger
+            //registrar el servicio de swagger
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddCors(options =>
-            { 
-                options.AddPolicy("AllowAnyOrigins", policy =>
-
-                    {
-                        policy.AllowAnyOrigin()
-                              .AllowAnyHeader()
-                              .AllowAnyMethod();
-                    }); // Configuración de CORS para permitir cualquier origen, método y encabezado       
-
+            {
+                options.AddPolicy("AllowAllOrigins", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
                 });
-
+            });
             builder.Services.AddOpenApi();
+
+            var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
+            var cloudinary = new Cloudinary(new Account(
+               cloudinaryConfig["CloudName"],
+               cloudinaryConfig["ApiKey"],
+               cloudinaryConfig["ApiSecret"]
+            ));
+            builder.Services.AddSingleton(cloudinary);
 
             var app = builder.Build();
 
@@ -48,25 +55,18 @@ namespace Ecommerce.Backend
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
-                //Entorno de desarrollo (mostrar Swagger);
+                //mostrar swagger;
                 app.UseSwagger();
                 app.UseSwaggerUI();
-
             }
-            app.UseHttpsRedirection();
-            app.UseCors("AllowAnyOrigins");
 
+            app.UseHttpsRedirection();
+            app.UseCors("AllowAllOrigins");
             app.UseAuthorization();
 
             app.MapControllers();
 
             app.Run();
-
         }
     }
-
 }
-
-
-
-
