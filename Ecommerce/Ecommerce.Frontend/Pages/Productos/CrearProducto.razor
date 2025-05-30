@@ -11,8 +11,7 @@
                           FullWidth="true" Margin="Margin.Dense" Required="true"
                           HelperText="Por favor, ingresa el nombre de producto." Lines="4" />
 
-            <MudNumericField @bind-Value="producto.Precio" Label="Precio" Variant="Variant.Outlined" T="decimal" Step="0.01M" Precision="2" />
-
+            <MudNumericField @bind-Value="producto.Precio" Label="Precio" Variant="Variant.Outlined" Step=".2M" />
 
             <MudNumericField @bind-Value="producto.Stock" Label="Stock" Variant="Variant.Text" Min="0" />
 

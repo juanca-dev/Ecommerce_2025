@@ -1,0 +1,122 @@
+﻿@page "/login"
+
+
+    <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-10">
+        <MudPaper Class="pa-6 rounded-lg" Elevation="25">
+            <MudText Typo="Typo.h6" Class="text-center mb-6">Iniciar Sesión</MudText>
+
+            <MudTextField @bind-Value="login.Email" Label="Correo Electrónico" Variant="Variant.Outlined"
+                          FullWidth="true" Margin="Margin.Dense" Required="true"
+                          HelperText="Por favor, ingresa tu correo electrónico." />
+
+            <MudTextField @bind-Value="login.Password" Label="Contraseña" Variant="Variant.Outlined"
+                          FullWidth="true" Margin="Margin.Dense" InputType="@PasswordInput"
+                          Required="true" HelperText="Por favor, ingresa tu contraseña."
+                          Class="mt-4" Adornment="Adornment.End" AdornmentIcon="@PasswordInputIcon"
+                          OnAdornmentClick="ButtonTestclick" AdornmentAriaLabel="Show Password" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-6 w-100"
+                       OnClick="IniciarSesion">Iniciar Sesión</MudButton>
+
+            <MudText Class="text-center mt-4">
+                ¿No tienes cuenta? <MudLink Href="/register" Color="Color.Primary">Regístrate aquí</MudLink>
+            </MudText>
+            <MudText Class="text-center mt-4">
+                ¿Olvidaste tu contraseña? <MudLink Href="/resetPassword" Color="Color.Primary">Recuperala aquí</MudLink>
+            </MudText>
+        </MudPaper>
+    </MudContainer>
+
+
+@code {
+    private readonly LoginDTO login = new();
+    public string Password { get; set; } = string.Empty;
+
+    [Inject] private HttpClient HttpClient { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
+    [Inject] private ILoginService LoginService { get; set; } = null!;
+
+    private bool isShow;
+    private InputType PasswordInput = InputType.Password;
+    private string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    protected override void OnInitialized()
+    {
+        Password = login.Password;
+    }
+
+    private void ButtonTestclick()
+    {
+        if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+
+    private async Task IniciarSesion()
+    {
+        var url = "api/Auth/Login";
+        var result = await HttpClient.PostAsJsonAsync(url, login);
+
+        if (result.IsSuccessStatusCode)
+        {
+
+            var jsonResponse = await result.Content.ReadFromJsonAsync<JsonElement>();
+
+            if (jsonResponse.TryGetProperty("token", out var tokenProperty))
+            {
+                var token = tokenProperty.GetString();
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadJwtToken(token);
+                var claims = jwtToken.Claims;
+
+                var uniqueNameClaim = claims.FirstOrDefault(c => c.Type == "unique_name")?.Value;
+                var roleClaim = claims.FirstOrDefault(c => c.Type == "role")?.Value;
+                var fotoClaim = claims.FirstOrDefault(c => c.Type == "Foto")?.Value;
+                var nameClaim = claims.FirstOrDefault(c => c.Type == "Nombre")?.Value;
+
+                if (string.IsNullOrEmpty(uniqueNameClaim) || string.IsNullOrEmpty(roleClaim) || string.IsNullOrEmpty(fotoClaim))
+                {
+                    throw new Exception("Faltan claims en el token.");
+                }
+
+                var newClaims = new List<Claim>
+                    {
+                        new(ClaimTypes.Name, uniqueNameClaim),
+                        new(ClaimTypes.Role, roleClaim),
+                        new("Foto", fotoClaim!),
+                        new("Nombre", nameClaim!)
+                    };
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    await LoginService.Login(token);
+                    Snackbar.Add($"Bienvenido {login.Email}", Severity.Success);
+                    NavigationManager.NavigateTo("/");
+                }
+                else
+                {
+                    Snackbar.Add("El token está vacío o es inválido.", Severity.Error);
+                }
+            }
+            else
+            {
+                Snackbar.Add("No se encontró el token en la respuesta.", Severity.Error);
+            }
+        }
+        else
+        {
+            Snackbar.Add("Correo electrónico o contraseña incorrectos.", Severity.Error);
+        }
+    }
+}

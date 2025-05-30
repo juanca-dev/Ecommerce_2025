@@ -1,0 +1,77 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <MudContainer>
+            <MudCard>
+                <MudCardContent>
+                    @if (!string.IsNullOrEmpty(photoUser))
+                    {
+                        <MudContainer Class="d-flex justify-content-center mb-3">
+                            <MudBadge Color="Color.Success" Overlap="true" Bordered="true" Class="position-relative">
+                                <MudAvatar Size="Size.Large" Class="mb-3 mx-auto d-block">
+                                    <MudImage Src="@photoUser"></MudImage>
+                                </MudAvatar>
+                            </MudBadge>
+                        </MudContainer>
+                    }
+                    <MudText Typo="Typo.h5" Align="Align.Center">"Hola, @userName"</MudText>
+                    <MudText Typo="Typo.h6" Align="Align.Center">"Perfil: @perfil"</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Tertiary" OnClick="EditarUsuario" FullWidth="true">
+                        Editar Usuario
+                    </MudButton>
+                    <MudSpacer></MudSpacer>
+                    <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="CerrarSesion" FullWidth="true">
+                        Cerrar Sesión
+                    </MudButton>
+                </MudCardContent>
+            </MudCard>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer>
+            <MudStack>
+                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary"><MudIcon Icon="@Icons.Material.Filled.Login" />Iniciar Sesion </MudButton>
+                <MudButton Href="/register" Color="Color.Secondary" Variant="Variant.Filled"><MudIcon Icon="@Icons.Material.Filled.HowToReg" />Registrarse</MudButton>
+            </MudStack>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? photoUser;
+    private string? userName;
+    private string? perfil;
+
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
+
+    [Inject] private AuthService AuthService { get; set; } = null!;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        userName = await AuthService.GetNameAsync();
+        perfil = await AuthService.GetUserRoleAsync();
+        if (photoUser is null)
+        {
+            photoUser = await AuthService.GetUserPhotoAsync();
+        }
+    }
+
+    private async Task CerrarSesion()
+    {
+
+        if (AuthenticationStateProvider is AuthenticationProviderJWT customProvider)
+        {
+            await customProvider.Logout();
+        }
+
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void EditarUsuario()
+    {
+        NavigationManager.NavigateTo("/editarUsuario");
+    }
+}

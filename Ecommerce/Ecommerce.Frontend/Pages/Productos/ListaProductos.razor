@@ -1,5 +1,4 @@
 ﻿@page "/productos"
-@using System.Globalization
 
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
@@ -25,8 +24,7 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd>@context.Nombre</MudTd>
-                <MudTd>@context.Precio.ToString("C2", CultureInfo.CreateSpecificCulture("es-PE"))</MudTd>
-               
+                <MudTd>L. @context.Precio</MudTd>
                 <MudTd>@context.Stock</MudTd>
                 <MudTd>@context.Categoria!.Nombre</MudTd>
                 <MudTd>

@@ -1,0 +1,134 @@
+﻿@page "/editarUsuario"
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-10">
+    <MudPaper Class="pa-6 rounded-lg" Elevation="25">
+        <MudText Typo="Typo.subtitle1" Class="text-center mb-6">Editar usuario</MudText>
+
+        <!-- Campo Nombre -->
+        <MudTextField @bind-Value="Usuario.Nombre" Label="Nombre" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" Required="true"
+                      HelperText="Por favor, ingresa tu nombre." />
+
+        <!-- Campo Email -->
+        <MudTextField @bind-Value="Usuario.Correo" Label="Correo Electrónico" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" InputType="InputType.Email"
+                      Required="true" HelperText="Por favor, ingresa un correo válido."
+                      Class="mt-4" />
+
+
+        <!-- Campo Perfil -->
+        <!-- Campo Foto (URL) -->
+        <MudFileUpload T="IBrowserFile" FilesChanged="SubirImagen">
+            <ActivatorContent>
+                <MudStack Direction="Direction.Horizontal" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIconButton Color="Color.Info" Icon="@Icons.Material.Filled.PhotoCamera" />
+                    <MudText Typo="Typo.body1">Seleccionar foto</MudText>
+                </MudStack>
+            </ActivatorContent>
+        </MudFileUpload>
+
+        @if (!string.IsNullOrEmpty(imageUrl))
+        {
+            <MudImage Src="@imageUrl" Height="200" Width="200" Class="border-radius=200" />
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="mt-6 w-100"
+                   OnClick="ChangePassword">Cambiar contraseña</MudButton>
+        <!-- Botón Registrar -->
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-6 w-100"
+                   OnClick="Guardar">Guardar</MudButton>
+
+
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public int UsuarioId { get; set; }
+    private Usuario Usuario { get; set; } = new Usuario();
+    private string? userName { get; set; }
+    private string imageUrl = string.Empty;
+
+    [Inject] private AuthService AuthService { get; set; } = null!;
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private HttpClient HttpClient { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private UploadFiles UploadFiles { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userName = await AuthService.GetUserNameAsync();
+        var response = await HttpClient.GetAsync($"api/Usuarios/GetUser?email={userName}");
+        if (response.IsSuccessStatusCode)
+        {
+            var userResponse = await response.Content.ReadFromJsonAsync<Usuario>();
+            if (userResponse != null)
+            {
+                Usuario = userResponse;
+            }
+        }
+
+        if (Usuario == null)
+        {
+            Snackbar.Add("El usuario no existe.", Severity.Error);
+            NavigationManager.NavigateTo("/");
+        }
+
+    }
+
+    private async Task SubirImagen(IBrowserFile file)
+    {
+        imageUrl = await UploadFiles.UploadImagesAsync(file);
+        Usuario.URLFoto = imageUrl;
+    }
+
+    private async Task ChangePassword()
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+        };
+        var dialog = await DialogService.ShowAsync<ChangePassword>("", parameters, options);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            Snackbar.Add("Contraseña modificada exitosamente!", Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task Guardar()
+    {
+
+        if (string.IsNullOrWhiteSpace(Usuario.Nombre))
+        {
+            Snackbar.Add("Por favor, completa todos los campos obligatorios.", Severity.Error);
+            return;
+        }
+
+        try
+        {            
+            var url = $"api/usuarios/{Usuario.Id}";
+            var result = await Repository.PutAsync(url, Usuario);
+           
+            if (result != null)
+            {
+                Snackbar.Add("Usuario actualizado exitosamente.", Severity.Success);
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add("Error al actualizar el usuario.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+    }
+
+}

@@ -1,0 +1,130 @@
+﻿@page "/register"
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-10">
+    <MudPaper Class="pa-6 rounded-lg" Elevation="25">
+        <MudText Typo="Typo.h6" Class="text-center mb-6">Registro de Usuario</MudText>
+
+        <!-- Campo Nombre -->
+        <MudTextField @bind-Value="usuario.Nombre" Label="Nombre" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" Required="true"
+                      HelperText="Por favor, ingresa tu nombre." />
+
+        <!-- Campo Email -->
+        <MudTextField @bind-Value="usuario.Correo" Label="Correo Electrónico" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" InputType="InputType.Email"
+                      Required="true" HelperText="Por favor, ingresa un correo válido."
+                      Class="mt-4" />
+
+        <!-- Campo Contraseña -->
+        <MudTextField @bind-Value="usuario.Password" Label="Contraseña" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" InputType="@PasswordInput"
+                      Required="true" HelperText="Por favor, ingresa una contraseña segura."
+                      Class="mt-4" Adornment="Adornment.End" AdornmentIcon="@PasswordInputIcon"
+                      OnAdornmentClick="ButtonTestclick" AdornmentAriaLabel="Show Password" />
+
+        <!-- Campo Nombre -->
+        <MudTextField @bind-Value="usuario.Telefono" Label="Telefono" Variant="Variant.Outlined"
+                      FullWidth="true" Margin="Margin.Dense" Required="true"
+                      HelperText="Por favor, ingresa tu telefono." />
+
+        <!-- Campo Foto (URL) -->
+        <MudFileUpload T="IBrowserFile" FilesChanged="SubirImagen">
+            <ActivatorContent>
+                <MudStack Direction="Direction.Horizontal" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIconButton Color="Color.Info" Icon="@Icons.Material.Filled.PhotoCamera" />
+                    <MudText Typo="Typo.body1">Seleccionar foto</MudText>
+                </MudStack>
+            </ActivatorContent>
+        </MudFileUpload>
+
+        @if (!string.IsNullOrEmpty(imageUrl))
+        {
+            <MudImage Src="@imageUrl" Height="200" Width="200" Class="border-radius=200" />
+        }
+
+        <!-- Botón Registrar -->
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-6 w-100"
+                   OnClick="HandleRegister">Registrar</MudButton>
+
+        <!-- Enlace para iniciar sesión -->
+        <MudText Class="text-center mt-4">
+            ¿Ya tienes cuenta? <MudLink Href="/login" Color="Color.Primary">Inicia sesión aquí</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+
+
+@code {
+    private Usuario usuario = new Usuario();
+    private string imageUrl = null!;
+
+    public string Password { get; set; } = string.Empty;
+    private bool isShow;
+    private InputType PasswordInput = InputType.Password;
+    private string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    public string SelectedOption { get; set; } = "Usuario";
+
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private HttpClient HttpClient { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private UploadFiles UploadFiles { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        Password = usuario.Password;
+    }
+
+    private void ButtonTestclick()
+    {
+        if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+
+
+    private async Task SubirImagen(IBrowserFile file)
+    {
+        imageUrl = await UploadFiles.UploadImagesAsync(file);
+        usuario.URLFoto = imageUrl;
+    }
+
+    private async Task HandleRegister()
+    {
+        // Validar campos requeridos
+        if (string.IsNullOrWhiteSpace(usuario.Nombre) ||
+            string.IsNullOrWhiteSpace(usuario.Correo) ||
+            string.IsNullOrWhiteSpace(usuario.Password)
+            )
+        {
+            Snackbar.Add("Por favor, completa todos los campos obligatorios.", Severity.Error);
+            return;
+        }
+
+
+        usuario.Perfil = SelectedOption;
+        var url = "api/usuarios";
+        var response = await HttpClient.PostAsJsonAsync(url, usuario);
+        Console.WriteLine("Respuesta" + response);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Registro exitoso.", Severity.Success);
+            NavigationManager.NavigateTo("/login");
+        }
+        else
+        {
+            Snackbar.Add("Error al registrar el usuario.", Severity.Error);
+        }
+    }
+}

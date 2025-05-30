@@ -12,10 +12,9 @@ namespace Ecommerce.Shared.Entities
         [Required(ErrorMessage = "El campo {0} es obligatorio.")]
         public string Nombre { get; set; } = null!;
 
-        [Column(TypeName = "decimal(10,2)")]
-        [DisplayFormat(DataFormatString = "{0:F2}")]
+        [Column(TypeName = "decimal(18,2)")]
+        [DisplayFormat(DataFormatString = "{0:C2}")]
         [Required(ErrorMessage = "El campo {0} es obligatorio.")]
-        [Range(0.01, 99999.99, ErrorMessage = "El precio debe estar entre 0.01 y 99999.99")]
         public decimal Precio { get; set; }
 
         [Required(ErrorMessage = "El campo {0} es obligatorio.")]

@@ -1,0 +1,151 @@
+﻿@page "/usuarios"
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
+    <MudGrid>
+        <MudItem xs="12" sm="12" md="12" lg="12">
+            <MudText Typo="Typo.h5">Lista de Usuarios</MudText>
+            <MudButton OnClick="CrearAdministrador" Color="Color.Primary" EndIcon="@Icons.Material.Filled.Add">Crear administrador</MudButton>
+        </MudItem>
+
+        <MudItem xs="12" sm="12" md="12" lg="12">
+            <MudTable Items="@usuarios" Filter="new Func<Usuario, bool>(FilterFunc1)" Hover="true" Bordered="true" Striped="true" Dense="true">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="filtro" Placeholder="Buscar por nombre" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Foto</MudTh>
+                    <MudTh>Nombre</MudTh>
+                    <MudTh>Correo</MudTh>
+                    <MudTh>Telefono</MudTh>
+                    <MudTh>Estado</MudTh>
+                    <MudTh>Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        @if (!string.IsNullOrEmpty(context.URLFoto))
+                        {
+                            <img src="@context.URLFoto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%;" />
+                        }
+                        else
+                        {
+                            <MudText>No hay foto disponible</MudText>
+                        }
+                    </MudTd>
+                    <MudTd>@context.Nombre</MudTd>
+                    <MudTd>@context.Correo</MudTd>
+                    <MudTd>@context.Telefono</MudTd>
+                    <MudTd>
+                        @if (context.Activo)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">Activo</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Error" Size="Size.Small">Inactivo</MudChip>
+                        }
+                    </MudTd>
+                    <MudTh>
+                        @if (context.Activo)
+                        {
+                            <MudButton OnClick="() => ActivarUsuario(context.Id)" Color="Color.Secondary" EndIcon="@Icons.Material.Filled.Unsubscribe">desactivar</MudButton>
+                        }
+                        else
+                        {
+                            <MudButton OnClick="() => ActivarUsuario(context.Id)" Color="Color.Info" EndIcon="@Icons.Material.Filled.VerifiedUser">activar</MudButton>
+                        }
+
+                    </MudTh>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+    @if (loading)
+    {
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Class="mt-6" />
+    }
+</MudContainer>
+
+@code {
+    private List<Usuario> usuarios = new();
+    private Usuario usuario = new();
+    private bool loading = true;
+    public string filtro = string.Empty;
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        var url = "api/usuarios";
+        usuarios = await Repository.GetAsync<List<Usuario>>(url);
+        loading = false;
+    }
+
+    private bool FilterFunc1(Usuario element) => FilterFunc(element, filtro);
+
+    private bool FilterFunc(Usuario element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Nombre.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task ActivarUsuario(int id)
+    {
+        var url = "api/usuarios";
+        usuario = await Repository.GetByIdAsync<Usuario>(url, id);
+        if (usuario != null)
+        {
+            var url2 = "api/usuarios/activeuser";
+            usuario.Activo = !usuario.Activo;
+            var result = await Repository.PostAsync<Usuario>(url2, usuario);
+            if (result != null)
+            {
+                Snackbar.Add("Estado modificado de forma exitosa :)", Severity.Success);
+                await OnInitializedAsync();
+                StateHasChanged();
+                NavigationManager.NavigateTo("/usuarios");
+            }
+            else
+            {
+                Snackbar.Add("Error al activar el usuario", Severity.Error);
+            }
+        }
+    }
+
+    private async Task CrearAdministrador()
+    {
+        try
+        {
+            var parameters = new DialogParameters();
+            var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+            };
+
+            var dialog = await DialogService.ShowAsync<CrearAdmin>("", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                Snackbar.Add("Administrador agregado exitosamente!", Severity.Success);
+                NavigationManager.NavigateTo("/usuarios");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
+        }
+    }
+}
