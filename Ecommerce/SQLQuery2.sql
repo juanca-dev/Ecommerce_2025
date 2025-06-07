@@ -1,2 +1,1 @@
-﻿SELECT name 
-FROM sys.tables;
+﻿select * tables

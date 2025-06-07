@@ -1,7 +1,176 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+@using Ecommerce.Shared.Responses
 
-<h1>Hello, world!</h1>
+<MudGrid>
+    <MudItem xs="6">
+        <MudTextField @bind-Value="searchText"
+                      Placeholder="Buscar producto..."
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      OnAdornmentClick="FiltrarPorNombre"
+                      Class="mb-4" />
+    </MudItem>
+</MudGrid>
 
-Welcome to your new app.
+<MudGrid>
+    <MudItem xs="9">
+        <MudGrid>
+            @foreach(var producto in productosFiltrados)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Style="height: 300px; display: flex; flex-direction: column;">                        
+                        <MudCardContent Style="flex: 1 1 auto; overflow: hidden;">
+                            <MudCardMedia Image="@producto.URLFoto"
+                                          Class="card zoom"
+                                          Style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px;" />
+                            <MudText Typo="Typo.subtitle1">@producto.Nombre</MudText>
+                        </MudCardContent>
+                        <MudCardActions Style="padding: 8px;">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">L. @producto.Precio.ToString("N2")</MudText>
+                            @* <MudButton OnClick="() => VerDetalles(producto.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Info">Ver Detalles</MudButton> *@
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudItem>
+    <MudItem xs="3">
+        <MudList T="string" Dense="true">
+            <MudListItem @onclick="MostrarTodas">
+                <MudText color="Color.Primary">Todas las categorías</MudText>
+            </MudListItem>
+            @foreach (var categoria in categorias)
+            {
+                <MudListItem @onclick="() => FiltrarPorCategoria(categoria.Id)">
+                    <MudText>@categoria.Nombre</MudText>
+                </MudListItem>
+            }
+        </MudList>
+    </MudItem>
+
+</MudGrid>
+
+<MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center" Class="my-4">
+    <MudItem xs="12" Class="d-flex justify-center align-center">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="@(currentPage == 1)" OnClick="AnteriorPagina" StartIcon="@Icons.Material.Filled.ArrowBack">
+            Anterior
+        </MudButton>
+
+        <MudText Typo="Typo.body1" Class="mx-4 mt-2">
+            Página <strong>@currentPage</strong> de <strong>@totalPages</strong>
+        </MudText>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="@(currentPage == totalPages)" OnClick="SiguientePagina" EndIcon="@Icons.Material.Filled.ArrowForward">
+            Siguiente
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+<style>
+    .zoom-image {
+        transition: transform 0.3s ease-in-out;
+    }
+
+        .zoom-image:hover {
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+
+</style>
+
+
+@code{
+    private List<Categoria> categorias = new();
+    private List<Producto> productos = new();
+    private List<Producto> productosFiltrados = new();
+
+    private string searchText = string.Empty;
+
+    private int currentPage = 1; // Página actual
+    private int pageSize = 9; // Cantidad de productos por página
+    private int totalProductos; // Total de productos
+    private int totalPages => (int)Math.Ceiling((double)totalProductos / pageSize); // Total de páginas
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+    [Inject] private AuthService AuthService { get; set; } = null!;
+    [Inject] private HttpClient HttpClient { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCategorias();
+        await CargarProductos();
+    }
+
+    private async Task CargarCategorias()
+    {
+        var url = "api/categorias";
+        categorias = await Repository.GetAsync<List<Categoria>>(url);
+    }
+
+    private async Task CargarProductos()
+    {
+        var url = $"api/productos/paginated?page={currentPage}&pageSize={pageSize}";
+        var response = await Repository.GetAsync<PaginationResponse<Producto>>(url);
+        if (response != null)
+        {
+            productos = response.Items;
+            totalProductos = response.TotalCount;
+            FiltrarPorNombre();
+        }
+    }
+
+    private void FiltrarPorCategoria(int categoriaId)
+    {
+        currentPage = 1; // Reiniciar a la primera página
+        productosFiltrados = productos
+            .Where(p => p.CategoriaId == categoriaId)
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void FiltrarPorNombre()
+    {
+        currentPage = 1;
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            productosFiltrados = productos;
+        }
+        else
+        {
+            productosFiltrados = productos
+                .Where(p => p.Nombre.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void MostrarTodas()
+    {
+        productosFiltrados = productos;
+    }
+
+    private async Task AnteriorPagina()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await CargarProductos();
+        }
+    }
+
+    private async Task SiguientePagina()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            await CargarProductos();
+        }
+    }
+}

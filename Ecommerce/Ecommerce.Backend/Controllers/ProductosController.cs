@@ -1,5 +1,6 @@
 ﻿using Ecommerce.Backend.Services;
 using Ecommerce.Shared.Entities;
+using Ecommerce.Shared.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Backend.Controllers
@@ -65,6 +66,25 @@ namespace Ecommerce.Backend.Controllers
             }
             await _service.DeleteAsync(id);
             return NoContent();
+        }
+
+        [HttpGet("paginated")]
+        public async Task<IActionResult> GetPaginated([FromQuery] int page = 1, [FromQuery] int pageSize = 9)
+        {
+            if (page <= 0 || pageSize <= 0)
+            {
+                return BadRequest("Los parámetros 'page' y 'pageSize' deben ser mayores a 0.");
+            }
+
+            var (productos, totalCount) = await _service.GetPaginatedAsync(page, pageSize);
+
+            var response = new PaginationResponse<Producto>
+            {
+                Items = [.. productos],
+                TotalCount = totalCount
+            };
+
+            return Ok(response);
         }
     }
 }

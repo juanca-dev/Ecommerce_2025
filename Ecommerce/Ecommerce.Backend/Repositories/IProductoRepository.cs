@@ -15,5 +15,7 @@ namespace Ecommerce.Backend.Repositories
         Task DeleteAsync(int id);
 
         Task<Categoria> GetCategoriaByIdAsync(int id);
+
+        Task<(IEnumerable<Producto> Productos, int TotalCount)> GetPaginatedAsync(int page, int pageSize);
     }
 }
