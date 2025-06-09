@@ -83,6 +83,5 @@ namespace Ecommerce.Backend.Services
         {
             return await _repository.GetPaginatedAsync(page, pageSize);
         }
-
     }
 }

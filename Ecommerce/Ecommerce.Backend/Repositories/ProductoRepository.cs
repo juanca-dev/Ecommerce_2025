@@ -78,9 +78,8 @@ namespace Ecommerce.Backend.Repositories
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
             return (productos, totalCount);
-
-
         }
     }
 }
