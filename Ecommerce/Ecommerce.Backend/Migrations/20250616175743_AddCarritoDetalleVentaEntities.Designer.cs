@@ -4,6 +4,7 @@ using Ecommerce.Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ecommerce.Backend.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250616175743_AddCarritoDetalleVentaEntities")]
+    partial class AddCarritoDetalleVentaEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,35 +24,6 @@ namespace Ecommerce.Backend.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Carrito", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Cantidad")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Comentario")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ProductoId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UsuarioId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductoId");
-
-                    b.HasIndex("UsuarioId");
-
-                    b.ToTable("Carritos");
-                });
 
             modelBuilder.Entity("Ecommerce.Shared.Entities.Categoria", b =>
                 {
@@ -100,36 +74,6 @@ namespace Ecommerce.Backend.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("Comentarios");
-                });
-
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Detalle", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Cantidad")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Comentario")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<int>("ProductoId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VentaId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductoId");
-
-                    b.HasIndex("VentaId");
-
-                    b.ToTable("DetallesVentas");
                 });
 
             modelBuilder.Entity("Ecommerce.Shared.Entities.Producto", b =>
@@ -242,54 +186,6 @@ namespace Ecommerce.Backend.Migrations
                     b.ToTable("Valoraciones");
                 });
 
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Venta", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Comentario")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("EstadoPedido")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UsuarioId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsuarioId");
-
-                    b.ToTable("Ventas");
-                });
-
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Carrito", b =>
-                {
-                    b.HasOne("Ecommerce.Shared.Entities.Producto", "Producto")
-                        .WithMany()
-                        .HasForeignKey("ProductoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Ecommerce.Shared.Entities.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Producto");
-
-                    b.Navigation("Usuario");
-                });
-
             modelBuilder.Entity("Ecommerce.Shared.Entities.Comentario", b =>
                 {
                     b.HasOne("Ecommerce.Shared.Entities.Producto", "Producto")
@@ -307,25 +203,6 @@ namespace Ecommerce.Backend.Migrations
                     b.Navigation("Producto");
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Detalle", b =>
-                {
-                    b.HasOne("Ecommerce.Shared.Entities.Producto", "Producto")
-                        .WithMany()
-                        .HasForeignKey("ProductoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Ecommerce.Shared.Entities.Venta", "Venta")
-                        .WithMany("DetallesVenta")
-                        .HasForeignKey("VentaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Producto");
-
-                    b.Navigation("Venta");
                 });
 
             modelBuilder.Entity("Ecommerce.Shared.Entities.Producto", b =>
@@ -356,22 +233,6 @@ namespace Ecommerce.Backend.Migrations
                     b.Navigation("Producto");
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Venta", b =>
-                {
-                    b.HasOne("Ecommerce.Shared.Entities.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("Ecommerce.Shared.Entities.Venta", b =>
-                {
-                    b.Navigation("DetallesVenta");
                 });
 #pragma warning restore 612, 618
         }

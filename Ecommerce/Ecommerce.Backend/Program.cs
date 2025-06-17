@@ -23,12 +23,14 @@ namespace Ecommerce.Backend
             builder.Services.AddScoped<CategoriaService>();
             builder.Services.AddScoped<ProductoService>();
             builder.Services.AddScoped<UsuarioService>();
+            builder.Services.AddScoped<VentaService>();
             builder.Services.AddScoped<IFilesService, FilesService>();
 
             //repositories capa de acceso a datos
             builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
             builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            builder.Services.AddScoped<IVentaRepository, VentaRepository>();
 
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 

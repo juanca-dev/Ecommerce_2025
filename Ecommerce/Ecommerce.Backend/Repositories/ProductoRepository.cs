@@ -81,5 +81,43 @@ namespace Ecommerce.Backend.Repositories
 
             return (productos, totalCount);
         }
+
+        public async Task AddCommentAsync(Comentario comentario)
+        {
+            await _context.Comentarios.AddAsync(comentario);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddStarsAsync(Valoracion valoracion)
+        {
+            await _context.Valoraciones.AddAsync(valoracion);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<Comentario>> GetComentariosAsync(int productoId)
+        {
+            var comentarios = await _context.Comentarios
+                .Include(c => c.Usuario)
+                .Where(c => c.ProductoId == productoId)
+                .ToListAsync();
+            return comentarios;
+        }
+
+        public async Task<IEnumerable<Valoracion>> GetValoracionesAsync(int productoId)
+        {
+            var valoraciones = await _context.Valoraciones
+                .Include(v => v.Usuario)
+                .Where(v => v.ProductoId == productoId)
+                .ToListAsync();
+            return valoraciones;
+        }
+
+        public async Task UpdateRating(int productoId, double puntuacion)
+        {
+            var producto = await _context.Productos.FindAsync(productoId) ?? throw new Exception($"Producto con id {productoId} no fue encontrado.");
+            producto.Calificacion = puntuacion;
+            _context.Entry(producto).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
     }
 }

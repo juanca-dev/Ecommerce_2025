@@ -83,5 +83,60 @@ namespace Ecommerce.Backend.Services
         {
             return await _repository.GetPaginatedAsync(page, pageSize);
         }
+
+        public async Task<ActionResponse<Comentario>> AddComentarioAsync(Comentario comentario)
+        {
+            var producto = await _repository.GetByIdAsync(comentario.ProductoId);
+            if (producto == null)
+            {
+                return new ActionResponse<Comentario> { Success = false, Message = "El producto no existe." };
+            }
+            var nuevoComentario = new Comentario
+            {
+                ProductoId = comentario.ProductoId,
+                UsuarioId = comentario.UsuarioId,
+                Texto = comentario.Texto
+            };
+            await _repository.AddCommentAsync(nuevoComentario);
+            return new ActionResponse<Comentario> { Success = true, Result = nuevoComentario };
+        }
+
+        public async Task<ActionResponse<Valoracion>> AddRatingAsync(Valoracion valoracion)
+        {
+            var producto = await _repository.GetByIdAsync(valoracion.ProductoId);
+            if (producto == null)
+            {
+                return new ActionResponse<Valoracion> { Success = false, Message = "El producto no existe." };
+            }
+
+            if (valoracion.Puntuacion < 1 || valoracion.Puntuacion > 5)
+            {
+                return new ActionResponse<Valoracion> { Success = false, Message = "La calificación debe estar entre 1 y 5." };
+            }
+
+            var nuevaValoracion = new Valoracion
+            {
+                ProductoId = valoracion.ProductoId,
+                UsuarioId = valoracion.UsuarioId,
+                Puntuacion = valoracion.Puntuacion
+            };
+
+            await _repository.AddStarsAsync(nuevaValoracion);
+            var puntuacion = await GetRatingAsync(nuevaValoracion.ProductoId);
+            await _repository.UpdateRating(nuevaValoracion.ProductoId, puntuacion);
+            return new ActionResponse<Valoracion> { Success = true, Result = nuevaValoracion };
+        }
+
+        public async Task<IEnumerable<Comentario>> GetComentariosAsync(int productoId)
+        {
+            return await _repository.GetComentariosAsync(productoId);
+        }
+
+        public async Task<double> GetRatingAsync(int productoId)
+        {
+            var valoraciones = await _repository.GetValoracionesAsync(productoId);
+            var promedio = valoraciones.Average(v => v.Puntuacion);
+            return promedio;
+        }
     }
 }

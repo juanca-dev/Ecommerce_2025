@@ -1,6 +1,8 @@
 ﻿@page "/"
-
+@using Ecommerce.Frontend.Pages.Ventas
 @using Ecommerce.Shared.Responses
+
+<MudButton OnClick="() => VerCarrito(usuario.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.ShoppingCartCheckout">Ver Carrito(@carritosUsuario.Count)</MudButton>
 
 <MudGrid>
     <MudItem xs="6">
@@ -29,7 +31,7 @@
                         </MudCardContent>
                         <MudCardActions Style="padding: 8px;">
                             <MudText Typo="Typo.h6" Color="Color.Primary">L. @producto.Precio.ToString("N2")</MudText>
-                            @* <MudButton OnClick="() => VerDetalles(producto.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Info">Ver Detalles</MudButton> *@
+                            <MudButton OnClick="() => VerDetalles(producto.Id)" Color="Color.Warning" EndIcon="@Icons.Material.Filled.Info">Ver Detalles</MudButton>
                         </MudCardActions>
                     </MudCard>
                 </MudItem>
@@ -64,11 +66,13 @@
         </MudText>
 
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   Disabled="@(currentPage == totalPages)" OnClick="SiguientePagina" EndIcon="@Icons.Material.Filled.ArrowForward">
+                   Disabled="@(currentPage >= totalPages)" OnClick="SiguientePagina" EndIcon="@Icons.Material.Filled.ArrowForward">
             Siguiente
         </MudButton>
     </MudItem>
 </MudGrid>
+
+
 
 <style>
     .zoom-image {
@@ -87,6 +91,10 @@
     private List<Categoria> categorias = new();
     private List<Producto> productos = new();
     private List<Producto> productosFiltrados = new();
+    private Usuario usuario = new();
+    private string? userName { get; set; }
+    private List<Carrito> carritos = new();
+    private List<Carrito> carritosUsuario = new();
 
     private string searchText = string.Empty;
 
@@ -106,6 +114,29 @@
     {
         await CargarCategorias();
         await CargarProductos();
+        userName = await AuthService.GetUserNameAsync();
+        await ObtenerUsuarioAsync();
+        await CargarCarritos();
+    }
+
+    private async Task ObtenerUsuarioAsync()
+    {
+        var response = await HttpClient.GetAsync($"api/Usuarios/GetUser?email={userName}");
+        if (response.IsSuccessStatusCode)
+        {
+            var userResponse = await response.Content.ReadFromJsonAsync<Usuario>();
+            if (userResponse != null)
+            {
+                usuario = userResponse;
+            }
+        }
+    }
+
+    private async Task CargarCarritos()
+    {
+        var url = "api/carritos";
+        carritos = await Repository.GetAsync<List<Carrito>>(url);
+        carritosUsuario = carritos.Where(c => c.Usuario!.Id == usuario.Id).ToList();
     }
 
     private async Task CargarCategorias()
@@ -122,8 +153,9 @@
         {
             productos = response.Items;
             totalProductos = response.TotalCount;
-            FiltrarPorNombre();
+            productosFiltrados = productos;           
         }
+        StateHasChanged();
     }
 
     private void FiltrarPorCategoria(int categoriaId)
@@ -148,7 +180,7 @@
             productosFiltrados = productos
                 .Where(p => p.Nombre.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-        }
+        }          
     }
 
     private void MostrarTodas()
@@ -161,7 +193,7 @@
         if (currentPage > 1)
         {
             currentPage--;
-            await CargarProductos();
+            await CargarProductos();            
         }
     }
 
@@ -170,7 +202,58 @@
         if (currentPage < totalPages)
         {
             currentPage++;
-            await CargarProductos();
+            await CargarProductos();                  
+        }
+    }
+
+    private async Task VerDetalles(int id)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["ProductoId"] = id };
+            var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+            };
+            var dialog = await DialogService.ShowAsync<DetallesProducto>("", parameters, options);
+            var result = await dialog.Result;
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                NavigationManager.NavigateTo("/");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al cargar los detalles del producto" + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task VerCarrito(int id)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["UsuarioId"] = usuario.Id };
+            var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+            };
+            var dialog = await DialogService.ShowAsync<CarritoDeCompra>("carrito de compra", parameters, options);
+            var result = await dialog.Result;
+            if (!result!.Canceled)
+            {
+                await OnInitializedAsync();
+                NavigationManager.NavigateTo("/");
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Ocurrió un error: " + ex.Message, Severity.Error);
         }
     }
 }

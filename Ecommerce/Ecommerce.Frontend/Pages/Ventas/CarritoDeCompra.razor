@@ -1,0 +1,143 @@
+﻿﻿<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h4" Class="text-center mb-6"></MudText>
+        @if (carritosUsuario?.Any() == true)
+        {
+            <MudList T="Carrito" Dense="true">
+                @foreach (var item in carritosUsuario)
+                {
+                    <MudListItem>
+                        <MudGrid>
+                            <MudItem xs="3" class="d-flex align-center">
+                                <MudAvatar>
+                                    <MudImage Src="@item.Producto!.URLFoto" Size="Size.Large"></MudImage>
+                                </MudAvatar>
+                            </MudItem>
+                            <MudItem xs="7">
+                                <MudText Typo="Typo.subtitle2">@item.Producto!.Nombre</MudText>
+                                <MudText Typo="Typo.body2">Cantidad: @item.Cantidad</MudText>
+                                <MudText Typo="Typo.body2">Precio: L. @item.Producto!.Precio</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Subtotal: L.@(item.Producto!.Precio * item.Cantidad)
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="2">
+                                <MudButton OnClick="() => Aumentar(item.Id)" Color="Color.Primary" EndIcon="@Icons.Material.Filled.Add"></MudButton>
+                                <MudButton OnClick="() => Disminuir(item.Id)" Color="Color.Secondary" EndIcon="@Icons.Material.Filled.Remove"></MudButton>
+                                <MudButton OnClick="() => EliminarCarrito(item.Id)" Color="Color.Error" EndIcon="@Icons.Material.Filled.Delete"></MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudListItem>
+                }
+            </MudList>
+            <MudDivider Class="my-2" />
+
+            <MudText Typo="Typo.h6" Align="Align.Right">
+                Total: L. @carritosUsuario.Sum(i => i.Producto!.Precio * i.Cantidad)
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">No hay productos en el carrito.</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (carritosUsuario.Any())
+        {
+            @* <MudButton OnClick="() => RealizarPago(carritoDTO)" Color="Color.Success" EndIcon="@Icons.Material.Filled.Paid">Pagar</MudButton> *@
+            <MudButton OnClick="() => MudDialog.Close(DialogResult.Ok(true))" Color="Color.Primary">Cerrar</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public int UsuarioId { get; set; }
+    private List<Carrito> carritos = new();
+    private List<Carrito> carritosUsuario = new();
+    public CarritoDTO carritoDTO { get; set; } = new CarritoDTO();
+
+    [Inject] private IRepository Repository { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = null!;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var url = "api/carritos";
+        carritos = await Repository.GetAsync<List<Carrito>>(url);
+        carritosUsuario = carritos.Where(c => c.Usuario!.Id == UsuarioId).ToList();
+    }
+
+    private async void Aumentar(int id)
+    {
+        var url = "api/carritos";
+        var carrito = await Repository.GetByIdAsync<Carrito>(url, id);
+        if (carrito == null)
+        {
+            Snackbar.Add("El carrito no existe.", Severity.Error);
+
+        }
+        else
+        {
+            carrito.Cantidad++;
+            var url2 = $"api/carritos/{id}";
+            var response = await Repository.PutAsync(url2, carrito);
+            if (response != null)
+            {
+                Snackbar.Add("cantidad actualizada exitosamente", Severity.Success);
+                await OnParametersSetAsync();
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("ocurrio un error al agregar el producto", Severity.Error);
+            }
+        }
+    }
+
+    private async void Disminuir(int id)
+    {
+        var url = "api/carritos";
+        var carrito = await Repository.GetByIdAsync<Carrito>(url, id);
+        if (carrito == null)
+        {
+            Snackbar.Add("El carrito no existe.", Severity.Error);
+
+        }
+        else
+        {
+            carrito.Cantidad--;
+            var url2 = $"api/carritos/{id}";
+            var response = await Repository.PutAsync(url2, carrito);
+            if (response != null)
+            {
+                Snackbar.Add("cantidad actualizada exitosamente", Severity.Success);
+                await OnParametersSetAsync();
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("ocurrio un error al agregar el producto", Severity.Error);
+            }
+        }
+    }
+
+    private async void EliminarCarrito(int id)
+    {
+        var url = $"api/carritos/{id}";
+        var response = await Repository.DeleteAsync(url);
+        if (response != null)
+        {
+            Snackbar.Add("producto eliminado del carrito", Severity.Success);
+            await OnParametersSetAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("ocurrio un error al eliminar el producto", Severity.Error);
+        }
+    }
+}

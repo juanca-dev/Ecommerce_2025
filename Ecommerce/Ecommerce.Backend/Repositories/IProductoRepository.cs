@@ -17,5 +17,15 @@ namespace Ecommerce.Backend.Repositories
         Task<Categoria> GetCategoriaByIdAsync(int id);
 
         Task<(IEnumerable<Producto> Productos, int TotalCount)> GetPaginatedAsync(int page, int pageSize);
+
+        Task<IEnumerable<Comentario>> GetComentariosAsync(int productoId);
+
+        Task<IEnumerable<Valoracion>> GetValoracionesAsync(int productoId);
+
+        Task AddCommentAsync(Comentario comentario);
+
+        Task AddStarsAsync(Valoracion valoracion);
+
+        Task UpdateRating(int productoId, double puntuacion);
     }
 }
